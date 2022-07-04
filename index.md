@@ -1,3 +1,3 @@
 # 学习
 
-[代码库](./markdown/code)
+[代码库](./markdown/code/codeList.md)
