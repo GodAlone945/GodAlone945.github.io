@@ -1,60 +1,9 @@
-# 6位数验证码
+# 学习
 
-Created: April 20, 2021 4:25 PM
-标签: vue, 代码
+[技术栈扩展](%E5%AD%A6%E4%B9%A0%207368d0b879d14ebfa67b236da778b2b4/%E6%8A%80%E6%9C%AF%E6%A0%88%E6%89%A9%E5%B1%95%20dcdd5dacae1441768d261737938997ba.csv)
 
-```jsx
-<div class="numberCode">
-        <el-input @input="inputControl(item)"
-                  @keyup.native="inputDirection($event, item)"
-                  @focus="adjust(item)"
-                  :ref="'item' + item"
-                  :key="item + 'code'"
-                  :id="'item' + item"
-                  :autofocus="item == current"
-                  maxlength="1"
-                  v-for="item in 6"
-                  v-model="numberCode[item - 1]"></el-input>
-      </div>
+[代码库](%E5%AD%A6%E4%B9%A0%207368d0b879d14ebfa67b236da778b2b4/%E4%BB%A3%E7%A0%81%E5%BA%93%204ce8b3f1da7d432b8df221fb702f7302.csv)
 
-// ====================控制验证码输入框 ↓====================
-      inputControl (item) {
-        // 当输入框内的内容变化是，判断当前输入框对应位置的数组位置内容是否为空
-        let number = this.numberCode[item - 1]
-        // 不为空，将聚焦与下一个输入框
-        this.current = number ? item+1 : item-1
-        let ref = number ? `item${parseInt(item) + 1}` : `item${parseInt(item) - 1}`
-        let dom = document.getElementById(ref)
-        if (dom) dom.focus()
-      },
-      //
-      adjust (item) {
-        // 必须从第一个输入框开始输入
-        if (!this.numberCode[0]) {
-          let dom = document.getElementById('item1')
-          if (dom) dom.focus()
-        }
-        console.log(item, this.current);
-        if (item !== this.current) {
-          let ref = `item${parseInt(this.current)}`
-          let dom = document.getElementById(ref)
-          if (dom) dom.focus()
-        }
-      },
-      // ========== 回退键触发事件 ↓ ==========
-      inputDirection (e, item) {
-        let val = this.numberCode[item - 1]
-        if (!val && e.keyCode == 8) {
-          let ref = `item${parseInt(item) - 1}`
-          this.current = item -1
-          let dom = document.getElementById(ref)
-          if (dom) dom.focus()
-        }
-        if (e.keyCode != 8 && val) {
-          let ref = `item${parseInt(item) + 1}`
-          this.current = item + 1
-          let dom = document.getElementById(ref)
-          if (dom) dom.focus()
-        }
-      },
-```
+[项目开发经验](%E5%AD%A6%E4%B9%A0%207368d0b879d14ebfa67b236da778b2b4/%E9%A1%B9%E7%9B%AE%E5%BC%80%E5%8F%91%E7%BB%8F%E9%AA%8C%20769398905b3a4b61a12e47358a688cf2.csv)
+
+[技术栈](%E5%AD%A6%E4%B9%A0%207368d0b879d14ebfa67b236da778b2b4/%E6%8A%80%E6%9C%AF%E6%A0%88%206cd6088c07ce4b048189c83a2c3880cb.md)
