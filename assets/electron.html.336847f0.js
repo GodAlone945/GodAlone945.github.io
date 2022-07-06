@@ -1,0 +1,1 @@
+const e={key:"v-435b58da",path:"/note/electron.html",title:"electron",lang:"zh-CN",frontmatter:{},excerpt:"",headers:[{level:2,title:"\u5B89\u88C5\u9519\u8BEF",slug:"\u5B89\u88C5\u9519\u8BEF",children:[]}],git:{updatedTime:1657068615e3,contributors:[{name:"\u738B\u5927\u4F1F",email:"wangdawei945@163.com",commits:1}]},filePathRelative:"note/electron.md"};export{e as data};
