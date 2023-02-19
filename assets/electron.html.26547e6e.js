@@ -1,1 +1,0 @@
-const e={key:"v-435b58da",path:"/note/electron.html",title:"electron",lang:"zh-CN",frontmatter:{},excerpt:"",headers:[{level:2,title:"\u5B89\u88C5\u9519\u8BEF",slug:"\u5B89\u88C5\u9519\u8BEF",children:[]}],git:{},filePathRelative:"note/electron.md"};export{e as data};
