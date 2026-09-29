@@ -28,7 +28,7 @@ jobs:
 
       - name: Clone VuePress source
         run: |
-          git clone --depth=1 https://github.com/GodAlone945/vuepress-theme-hope.git source
+          git clone --depth=1 https://github.com/GodAlone945/vuepress-theme-hope.git "$RUNNER_TEMP/vuepress-source"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -39,19 +39,17 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: source/pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: source
+        working-directory: /home/runner/work/_temp/vuepress-source
         run: pnpm install --frozen-lockfile
 
       - name: Build VuePress
-        working-directory: source
+        working-directory: /home/runner/work/_temp/vuepress-source
         run: pnpm docs:build
 
       - name: Verify build output
-        run: test -f source/src/.vuepress/dist/index.html
+        run: test -f "$RUNNER_TEMP/vuepress-source/src/.vuepress/dist/index.html"
 
       - name: Sync build output
         run: |
@@ -59,9 +57,8 @@ jobs:
             --exclude=".git/" \
             --exclude=".github/" \
             --exclude=".rebuild-trigger" \
-            source/src/.vuepress/dist/ \
+            "$RUNNER_TEMP/vuepress-source/src/.vuepress/dist/" \
             ./
-          rm -rf source
           touch .nojekyll
 
       - name: Commit generated website
