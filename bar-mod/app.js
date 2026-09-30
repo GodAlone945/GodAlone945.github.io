@@ -1,5 +1,7 @@
 (()=>{"use strict";
 const D=window.BAR_TOOL_DATA||{raptors:[],scavs:[],behaviors:[],raptorParams:[],scavParams:[]};
+const BK=window.BAKANI_MOD_DATA||{sections:[],raptorGlobal:null,bossHp:[],shieldCommand:"!experimentalshields bounceeverything"};
+const BAKANI_SHORT=["防御/近防/护盾","工厂/T3/旗舰","指挥官/朱诺/摸金","走卒/弩炮/先锋/轨道炮","盖波加/地热炮","主宰/星落/诸神炮/灾祸","虫族单位/管子平衡","三巨龙/超级单位/纳米","海军/小蓝女王/企鹅","LEG激光/防空舰/卡格纳特"];
 const $=id=>document.getElementById(id);
 const qa=s=>[...document.querySelectorAll(s)];
 const num=(id,d)=>{const v=Number($(id)?.value);return Number.isFinite(v)?v:d};
@@ -58,9 +60,11 @@ const PLAYER_DEFENSES=[
 ];
 let enabledDefenseUnits=new Set(PLAYER_DEFENSES.map(x=>x.id));
 
-const CONFIG_IDS=["playerDefense","landUnits","armLand","corLand","legLand","legSlow","t3Units","armT3","corT3","legT3","bossSupport","bossSupportStagger","bossSupportQueenBonus","ultimate","teamColorFx","teamColorMode","armUltRange","armUltDamage","armUltBeam","armUltReload","armUltAoe","corUltRange","corUltDamage","corUltReload","corUltAoe","corUltFireDps","corUltFireRange","corUltFireTime","legUltRange","legUltDamage","legUltBurst","legUltBurstRate","legUltBeam","legUltReload","legUltAoe","elite","roles","colossus","egg","intercept","boss","hp","damage","capn","roleCount","chance","roleWeight","giantHp","giantCap","eggMult","aggroDist","aggroChance","queenHp","stagger","staggerCost"];
-const BOOL_IDS=new Set(["playerDefense","landUnits","armLand","corLand","legLand","legSlow","t3Units","armT3","corT3","legT3","bossSupport","ultimate","teamColorFx","elite","roles","colossus","egg","intercept","boss"]);
-const TEXT_IDS=new Set(["teamColorMode"]);
+const CONFIG_IDS=["playerDefense","landUnits","armLand","corLand","legLand","legSlow","t3Units","armT3","corT3","legT3","bossSupport","bossSupportStagger","bossSupportQueenBonus","ultimate","teamColorFx","teamColorMode","armUltRange","armUltDamage","armUltBeam","armUltReload","armUltAoe","corUltRange","corUltDamage","corUltReload","corUltAoe","corUltFireDps","corUltFireRange","corUltFireTime","legUltRange","legUltDamage","legUltBurst","legUltBurstRate","legUltBeam","legUltReload","legUltAoe","bakaniPerf","bakaniRaptorGlobal","bakaniShieldBounce","bakaniBossProfile","bakaniSpawnExpire","bakaniQueenReload","bakaniTurretCap","bakaniSuperCap","risePerf","riseCommanders","riseTech","riseQueens","riseDragons","riseDefense","riseHealerCap","riseHiveCap","riseSpawnExpire","riseQueenReload","riseDragonReload","eliteHive","hiveHealth","hiveMetalMake","hiveEnergyMake","hiveEnergyStorage","hiveWorkerTime","hiveGroundDamage","hiveGroundReload","hiveGroundBurst","hiveGroundAoe","hiveAaDamage","hiveAaReload","hiveMeteorDamage","hiveMeteorReload","hiveBrood","hiveBroodReload","hiveBroodSpawn","hiveBroodExpire","performance","perfMaxBurst","perfMaxProjectiles","perfMinReload","perfMinBurstRate","perfSparkMax","perfClusterMax","perfAreaTime","perfSpawnExpire","elite","roles","colossus","egg","intercept","boss","hp","damage","capn","roleCount","chance","roleWeight","giantHp","giantCap","eggMult","aggroDist","aggroChance","queenHp","stagger","staggerCost"];
+const BOOL_IDS=new Set(["playerDefense","landUnits","armLand","corLand","legLand","legSlow","t3Units","armT3","corT3","legT3","bossSupport","ultimate","teamColorFx","bakaniPerf","bakaniRaptorGlobal","bakaniShieldBounce","risePerf","riseCommanders","riseTech","riseQueens","riseDragons","riseDefense","eliteHive","hiveBrood","performance","elite","roles","colossus","egg","intercept","boss"]);
+const TEXT_IDS=new Set(["teamColorMode","hiveBroodSpawn","bakaniBossProfile"]);
+const BAKANI_SECTION_IDS=BK.sections.map((_,i)=>"bakaniS"+i);
+BAKANI_SECTION_IDS.forEach(id=>{CONFIG_IDS.push(id);BOOL_IDS.add(id)});
 function getConfig(){
   const s={};
   for(const id of CONFIG_IDS){
@@ -71,6 +75,17 @@ function getConfig(){
   return s;
 }
 function setConfig(s){
+  if(s.performance===undefined&&$("performance"))$("performance").checked=false;
+  if(s.bakaniPerf===undefined&&$("bakaniPerf"))$("bakaniPerf").checked=false;
+  if(s.bakaniPerf===false)BAKANI_SECTION_IDS.forEach(id=>{if($(id))$(id).checked=false});
+  if(s.eliteHive===undefined&&$("eliteHive"))$("eliteHive").checked=false;
+  if(s.hiveBrood===undefined&&$("hiveBrood"))$("hiveBrood").checked=false;
+  if(s.risePerf===undefined&&$("risePerf"))$("risePerf").checked=false;
+  if(s.riseCommanders===undefined&&$("riseCommanders"))$("riseCommanders").checked=false;
+  if(s.riseTech===undefined&&$("riseTech"))$("riseTech").checked=false;
+  if(s.riseQueens===undefined&&$("riseQueens"))$("riseQueens").checked=false;
+  if(s.riseDragons===undefined&&$("riseDragons"))$("riseDragons").checked=false;
+  if(s.riseDefense===undefined&&$("riseDefense"))$("riseDefense").checked=false;
   for(const id of CONFIG_IDS){
     if(s[id]===undefined)continue;
     const e=$(id);if(!e)continue;
@@ -87,7 +102,18 @@ const BUILTIN={
   colossus:{title:"巨兽挑战",desc:"普通虫更少，中后期依靠 T4 Assault 与 Matriarch 制造压力。",tags:["巨兽","后期"],state:{playerDefense:true,landUnits:true,armLand:true,corLand:true,legLand:true,legSlow:true,t3Units:true,armT3:true,corT3:true,legT3:true,bossSupport:true,bossSupportStagger:4.5,bossSupportQueenBonus:1.25,ultimate:true,teamColorFx:true,teamColorMode:"hybrid",armUltRange:6200,armUltDamage:45000,armUltBeam:4,armUltReload:5,armUltAoe:40,corUltRange:6100,corUltDamage:6000,corUltReload:1.05,corUltAoe:260,corUltFireDps:240,corUltFireRange:200,corUltFireTime:9,legUltRange:6100,legUltDamage:2000,legUltBurst:63,legUltBurstRate:.03,legUltBeam:.15,legUltReload:14,legUltAoe:120,elite:true,roles:true,colossus:true,egg:false,intercept:false,boss:true,hp:1.5,damage:1.25,capn:10,roleCount:3,chance:.7,roleWeight:3,giantHp:4,giantCap:2,eggMult:1.25,aggroDist:1800,aggroChance:1,queenHp:1.75,stagger:3,staggerCost:5000}},
   economy:{title:"虫卵经济",desc:"启用战利品经济实验，提高 Raptor metalCost，从而影响蛋资源价值。",tags:["经济","回收"],state:{playerDefense:true,landUnits:true,armLand:true,corLand:true,legLand:true,legSlow:true,t3Units:true,armT3:true,corT3:true,legT3:true,bossSupport:true,bossSupportStagger:4.5,bossSupportQueenBonus:1.25,ultimate:true,teamColorFx:true,teamColorMode:"hybrid",armUltRange:6200,armUltDamage:45000,armUltBeam:4,armUltReload:5,armUltAoe:40,corUltRange:6100,corUltDamage:6000,corUltReload:1.05,corUltAoe:260,corUltFireDps:240,corUltFireRange:200,corUltFireTime:9,legUltRange:6100,legUltDamage:2000,legUltBurst:63,legUltBurstRate:.03,legUltBeam:.15,legUltReload:14,legUltAoe:120,elite:true,roles:true,colossus:true,egg:true,intercept:false,boss:true,hp:1.7,damage:1.3,capn:18,roleCount:4,chance:.75,roleWeight:4,giantHp:2.5,giantCap:3,eggMult:1.75,aggroDist:1800,aggroChance:1,queenHp:1.5,stagger:3,staggerCost:5000}}
 };
-function resetState(){return {playerDefense:false,defenseUnits:[],landUnits:false,armLand:false,corLand:false,legLand:false,legSlow:false,t3Units:false,armT3:false,corT3:false,legT3:false,bossSupport:false,bossSupportStagger:4.5,bossSupportQueenBonus:1.25,ultimate:false,teamColorFx:false,teamColorMode:"hybrid",armUltRange:6200,armUltDamage:45000,armUltBeam:4,armUltReload:5,armUltAoe:40,corUltRange:6100,corUltDamage:6000,corUltReload:1.05,corUltAoe:260,corUltFireDps:240,corUltFireRange:200,corUltFireTime:9,legUltRange:6100,legUltDamage:2000,legUltBurst:63,legUltBurstRate:.03,legUltBeam:.15,legUltReload:14,legUltAoe:120,elite:false,roles:false,colossus:false,egg:false,intercept:false,boss:false,hp:1,damage:1,capn:20,roleCount:4,chance:.75,roleWeight:4,giantHp:2,giantCap:4,eggMult:1,aggroDist:1800,aggroChance:1,queenHp:1,stagger:1,staggerCost:5000}}
+Object.values(BUILTIN).forEach(p=>{p.state.performance=false;p.state.eliteHive=false;p.state.hiveBrood=false;p.state.risePerf=false;p.state.riseCommanders=false;p.state.riseTech=false;p.state.riseQueens=false;p.state.riseDragons=false;p.state.riseDefense=false;p.state.bakaniPerf=false;p.state.bakaniRaptorGlobal=false;p.state.bakaniShieldBounce=false;BAKANI_SECTION_IDS.forEach(id=>p.state[id]=false)});
+BUILTIN.performance={
+  title:"性能重构 · 精英虫潮",
+  desc:"继承三巨龙/虫族崛起的高经济与高价值单位思路，用更少单位、更高单体价值和全局武器事件限流替代后期虫海。",
+  tags:["性能","独立模式","推荐"],
+  state:{playerDefense:true,landUnits:true,armLand:true,corLand:true,legLand:true,legSlow:true,t3Units:true,armT3:true,corT3:true,legT3:true,bossSupport:true,bossSupportStagger:5,bossSupportQueenBonus:1.35,ultimate:true,teamColorFx:true,teamColorMode:"hybrid",armUltRange:6200,armUltDamage:45000,armUltBeam:4,armUltReload:5,armUltAoe:40,corUltRange:6100,corUltDamage:9000,corUltReload:1.6,corUltAoe:250,corUltFireDps:260,corUltFireRange:190,corUltFireTime:6,legUltRange:6100,legUltDamage:14000,legUltBurst:9,legUltBurstRate:.08,legUltBeam:.18,legUltReload:14,legUltAoe:110,eliteHive:true,hiveHealth:120000,hiveMetalMake:700,hiveEnergyMake:45000,hiveEnergyStorage:50000,hiveWorkerTime:2500,hiveGroundDamage:6000,hiveGroundReload:10,hiveGroundBurst:2,hiveGroundAoe:300,hiveAaDamage:2500,hiveAaReload:2.5,hiveMeteorDamage:50000,hiveMeteorReload:15,hiveBrood:true,hiveBroodReload:30,hiveBroodSpawn:"raptor_land_swarmer_brood_t3_v1",hiveBroodExpire:25,performance:true,perfMaxBurst:8,perfMaxProjectiles:4,perfMinReload:.12,perfMinBurstRate:.03,perfSparkMax:6,perfClusterMax:6,perfAreaTime:6,perfSpawnExpire:30,elite:true,roles:true,colossus:true,egg:true,intercept:true,boss:true,hp:2.4,damage:1.6,capn:8,roleCount:2,chance:.65,roleWeight:3,giantHp:4,giantCap:2,eggMult:1.6,aggroDist:1800,aggroChance:.9,queenHp:2.5,stagger:4,staggerCost:4500}
+};
+BUILTIN.rise={title:"虫族崛起 · 性能版",desc:"从上传的《虫族崛起》四组 tweakunits 拆出的独立性能重构：指挥官、T1-T4治疗虾/经济、大小女王、四小龙/三巨龙。",tags:["来源模组","性能","独立模块"],state:{...BUILTIN.performance.state,risePerf:true,riseCommanders:true,riseTech:true,riseQueens:true,riseDragons:true,riseDefense:true,riseHealerCap:8,riseHiveCap:4,riseSpawnExpire:25,riseQueenReload:10,riseDragonReload:.2,eliteHive:false,hiveBrood:false}};
+const BAKANI_PRESET_STATE={...BUILTIN.performance.state,playerDefense:false,landUnits:false,armLand:false,corLand:false,legLand:false,legSlow:false,t3Units:false,armT3:false,corT3:false,legT3:false,bossSupport:false,ultimate:false,eliteHive:false,hiveBrood:false,risePerf:false,riseCommanders:false,riseTech:false,riseQueens:false,riseDragons:false,riseDefense:false,elite:false,roles:false,colossus:false,egg:false,intercept:false,boss:false,bakaniPerf:true,bakaniRaptorGlobal:true,bakaniShieldBounce:true,bakaniBossProfile:"348 2倍血",bakaniSpawnExpire:25,bakaniQueenReload:10,bakaniTurretCap:6,bakaniSuperCap:3,performance:true,perfMaxBurst:6,perfMaxProjectiles:4,perfMinReload:.12,perfMinBurstRate:.03,perfSparkMax:6,perfClusterMax:6,perfAreaTime:6,perfSpawnExpire:25};
+BAKANI_SECTION_IDS.forEach(id=>BAKANI_PRESET_STATE[id]=true);
+BUILTIN.bakani={title:"巴卡妮三巨龙 · 性能版",desc:"完整保留上传文档的 10 组 tweakunits、虫族全局规则与可选 Queen 血量档，再用低事件数覆盖层压缩高频武器和召唤物。",tags:["来源模组","三巨龙","性能"],state:BAKANI_PRESET_STATE};
+function resetState(){return {playerDefense:false,defenseUnits:[],landUnits:false,armLand:false,corLand:false,legLand:false,legSlow:false,t3Units:false,armT3:false,corT3:false,legT3:false,bossSupport:false,bossSupportStagger:4.5,bossSupportQueenBonus:1.25,ultimate:false,teamColorFx:false,teamColorMode:"hybrid",armUltRange:6200,armUltDamage:45000,armUltBeam:4,armUltReload:5,armUltAoe:40,corUltRange:6100,corUltDamage:6000,corUltReload:1.05,corUltAoe:260,corUltFireDps:240,corUltFireRange:200,corUltFireTime:9,legUltRange:6100,legUltDamage:2000,legUltBurst:63,legUltBurstRate:.03,legUltBeam:.15,legUltReload:14,legUltAoe:120,bakaniPerf:false,bakaniRaptorGlobal:false,bakaniShieldBounce:false,bakaniBossProfile:"",bakaniSpawnExpire:25,bakaniQueenReload:10,bakaniTurretCap:6,bakaniSuperCap:3,risePerf:false,riseCommanders:false,riseTech:false,riseQueens:false,riseDragons:false,riseDefense:false,riseHealerCap:8,riseHiveCap:4,riseSpawnExpire:25,riseQueenReload:10,riseDragonReload:.2,eliteHive:false,hiveHealth:120000,hiveMetalMake:700,hiveEnergyMake:45000,hiveEnergyStorage:50000,hiveWorkerTime:2500,hiveGroundDamage:6000,hiveGroundReload:10,hiveGroundBurst:2,hiveGroundAoe:300,hiveAaDamage:2500,hiveAaReload:2.5,hiveMeteorDamage:50000,hiveMeteorReload:15,hiveBrood:false,hiveBroodReload:30,hiveBroodSpawn:"raptor_land_swarmer_brood_t3_v1",hiveBroodExpire:25,performance:false,perfMaxBurst:8,perfMaxProjectiles:4,perfMinReload:.12,perfMinBurstRate:.03,perfSparkMax:6,perfClusterMax:6,perfAreaTime:6,perfSpawnExpire:30,elite:false,roles:false,colossus:false,egg:false,intercept:false,boss:false,hp:1,damage:1,capn:20,roleCount:4,chance:.75,roleWeight:4,giantHp:2,giantCap:4,eggMult:1,aggroDist:1800,aggroChance:1,queenHp:1,stagger:1,staggerCost:5000}}
 
 function squadLine(name,minA,maxA,behavior,rarity,count,weight,distance,chance){
   return '  setRaptorSquad("'+name+'",'+minA+','+maxA+',"'+behavior+'","'+rarity+'",'+count+','+weight+','+distance+','+chance+')\n';
@@ -380,6 +406,154 @@ function buildUltimateLua(s){
   return wrapModule(p.join(""));
 }
 
+function bakaniModule(slot,title,lua,type="tweakdefs"){return {slot,title,lua,type,key:type+(slot===0?"":slot)}}
+function buildBakaniPerformanceLua(s){
+  if(!s.bakaniPerf)return "";
+  const expire=Math.max(5,Number(s.bakaniSpawnExpire)||25);
+  const qreload=Math.max(2,Number(s.bakaniQueenReload)||10);
+  const turretCap=Math.max(1,Math.round(s.bakaniTurretCap||6));
+  const superCap=Math.max(1,Math.round(s.bakaniSuperCap||3));
+  const p=[];
+  p.push('  local function U(n) return UnitDefs[n] end\n');
+  p.push('  local function W(n,k) local u=U(n) return u and u.weapondefs and u.weapondefs[k] end\n');
+  p.push('  local function scale(w,m) if not w or not w.damage or m==1 then return end for k,v in pairs(w.damage) do if type(v)=="number" then w.damage[k]=v*m end end end\n');
+  p.push('  local function collapse(w,b,pr,r) if not w then return end local m=1 if type(w.burst)=="number" and w.burst>b then m=m*w.burst/b w.burst=b end if type(w.projectiles)=="number" and w.projectiles>pr then m=m*w.projectiles/pr w.projectiles=pr end if type(w.reloadtime)=="number" and w.reloadtime>0 and w.reloadtime<r then m=m*r/w.reloadtime w.reloadtime=r end scale(w,m) if w.burstrate and w.burstrate<.03 then w.burstrate=.03 end end\n');
+  p.push('  local function cp(w,k,v) if w then w.customparams=w.customparams or {} w.customparams[k]=tostring(v) end end\n');
+  p.push('  for _,n in ipairs({"raptor_queen_epic","raptor_queen_easy","raptor_queen_veryeasy","raptor_queen_veryhard"}) do local u=U(n) if u then u.maxthisunit=1 local w=u.weapondefs and u.weapondefs.botcannon if w then w.burst=1 w.projectiles=1 if not w.reloadtime or w.reloadtime<'+qreload+' then w.reloadtime='+qreload+' end cp(w,"spawns_expire",'+expire+') cp(w,"stockpilelimit",1) end end end\n');
+  p.push('  local dragons={{"raptor_matriarch_acid","acidgoo"},{"raptor_matriarch_spectre","goo"},{"raptor_matriarch_electric","goolauncher"}} for _,x in ipairs(dragons) do local u=U(x[1]) if u then u.maxthisunit=1 local w=W(x[1],x[2]) collapse(w,1,1,.2) cp(w,"spark_maxunits",6) cp(w,"spawns_expire",'+expire+') end end\n');
+  p.push('  local small={{"raptor_allterrain_arty_brood_t4_v1","cor_gol"},{"raptor_air_bomber_brood_t4_v4","dmaw"},{"raptor_air_bomber_brood_t4_v3","t2heatray"},{"raptor_air_bomber_brood_t4_v2","t2heatray"}} for _,x in ipairs(small) do local u=U(x[1]) if u then u.maxthisunit=1 collapse(W(x[1],x[2]),2,1,.2) end end\n');
+  p.push('  local supers={"armfepocht4","corfblackhyt4","corsok","corkarganetht4","legdrone","armlunchbox","legerailtank","armvadert4","corgolt4","armrattet4","corjugg","scavengerbossv4_easy"} for _,n in ipairs(supers) do local u=U(n) if u and (not u.maxthisunit or u.maxthisunit>'+superCap+') then u.maxthisunit='+superCap+' end end\n');
+  p.push('  collapse(W("legdrone","newdmaw"),2,1,.15) collapse(W("corkarganetht4","commando_stunner"),4,4,.12)\n');
+  p.push('  local turrets={"raptor_antinuke","raptor_turret_acid_t2_v1","raptor_turret_acid_t3_v1","raptor_turret_acid_t4_v1","raptor_turret_antiair_t2_v1","raptor_turret_antiair_t3_v1","raptor_turret_antiair_t4_v1","raptor_turret_antinuke_t2_v1","raptor_turret_antinuke_t3_v1","raptor_turret_basic_t2_v1","raptor_turret_basic_t3_v1","raptor_turret_basic_t4_v1","raptor_turret_burrow_t2_v1","raptor_turret_emp_t2_v1","raptor_turret_emp_t3_v1","raptor_turret_emp_t4_v1","raptor_worm_green"} for _,n in ipairs(turrets) do local u=U(n) if u and (not u.maxthisunit or u.maxthisunit>'+turretCap+') then u.maxthisunit='+turretCap+' end end\n');
+  p.push('  local h=W("raptor_hive","antiground") if h then collapse(h,2,1,.2) cp(h,"spawns_expire",'+expire+') end\n');
+  p.push('  for _,u in pairs(UnitDefs) do for _,w in pairs(u.weapondefs or {}) do local q=w.customparams if q then local sm=tonumber(q.spark_maxunits) if sm and sm>6 then q.spark_maxunits="6" end local se=tonumber(q.spawns_expire) if se and se>'+expire+' then q.spawns_expire="'+expire+'" end end end end\n');
+  return wrapModule(p.join(""));
+}
+function buildBakaniModules(s){
+  if(!s.bakaniPerf)return [];
+  const mods=[];
+  BK.sections.forEach((sec,i)=>{if(s["bakaniS"+i]&&sec?.b64)mods.push(bakaniModule(i,"巴卡妮 · "+(BAKANI_SHORT[i]||sec.label),decode64(sec.b64),"tweakunits"))});
+  if(s.bakaniRaptorGlobal&&BK.raptorGlobal?.b64)mods.push(bakaniModule(21,"巴卡妮 · 虫子全局规则",decode64(BK.raptorGlobal.b64)));
+  if(s.bakaniBossProfile){
+    const b=BK.bossHp.find(x=>x.label===s.bakaniBossProfile);
+    if(b?.b64)mods.push(bakaniModule(22,"巴卡妮 · Queen "+b.label,decode64(b.b64)));
+  }
+  const perf=buildBakaniPerformanceLua(s);if(perf)mods.push(bakaniModule(23,"巴卡妮 · 性能覆盖层",perf));
+  return mods;
+}
+function buildExtraCommands(s){const a=[];if(s.bakaniPerf&&s.bakaniShieldBounce&&BK.shieldCommand)a.push(BK.shieldCommand);return a}
+
+function buildRaptorRisePerformanceLua(s){
+  if(!s.risePerf)return "";
+  const healerCap=Math.max(1,Math.round(s.riseHealerCap||8));
+  const hiveCap=Math.max(1,Math.round(s.riseHiveCap||4));
+  const spawnExpire=Math.max(5,Number(s.riseSpawnExpire)||25);
+  const queenReload=Math.max(2,Number(s.riseQueenReload)||10);
+  const dragonReload=Math.max(.05,Number(s.riseDragonReload)||.2);
+  const p=[];
+  p.push('  -- 虫族崛起 2026.7.4 性能重构：保留科技/经济/女王/巨龙结构，降低高频事件与场上存量\n');
+  p.push('  local function U(n) return UnitDefs[n] end\n');
+  p.push('  local function W(n,k) local u=U(n) return u and u.weapondefs and u.weapondefs[k] end\n');
+  p.push('  local function dmg(w,t) if not w then return end w.damage=w.damage or {} for k,v in pairs(t) do w.damage[k]=v end end\n');
+  p.push('  local function builds(n,t) local u=U(n) if u then u.buildoptions=t end end\n');
+  if(s.riseCommanders){
+    p.push('  local commonBuild={"armsolar","raptor_turret_antiair_t2_v1","raptor_land_swarmer_heal_t1_v1","raptor_turret_basic_t2_v1","corbhmth","armfort","raptor_turret_antiair_t4_v1","raptor_turret_emp_t4_v1","raptor_air_scout_basic_t4_v1","raptor_turret_basic_t3_v1","raptor_turret_emp_t3_v1"}\n');
+    p.push('  local ch={armcom=100000,corcom=130000,legcom=115000} for n,h in pairs(ch) do local u=U(n) if u then u.autoheal=5000 u.builddistance=500 u.energymake=3000 u.energystorage=99999999 u.metalmake=20 u.metalstorage=99999999 u.health=h u.speed=200 u.turnrate=3000 u.workertime=8000 u.maxslope=360 u.buildoptions=commonBuild end end\n');
+    p.push('  local a=W("armcom","old_armsnipe_weapon") if a then a.projectiles=1 a.reloadtime=1.2 a.range=1500 dmg(a,{default=30000,commanders=6000}) end\n');
+    p.push('  local c=W("corcom","dmaw") if c then c.burst=2 c.burstrate=.08 c.reloadtime=.25 c.range=1280 dmg(c,{default=9500,subs=9500,commanders=3500}) end\n');
+    p.push('  local l=W("legcom","leg_t2_microflak") if l then l.burst=2 l.burstrate=.06 l.reloadtime=.28 l.range=1390 dmg(l,{default=2320,vtol=2320,commanders=720}) end\n');
+    p.push('  local sol=U("armsolar") if sol then sol.energyupkeep=20 sol.energystorage=99999999 sol.metalstorage=99999999 end local geo=U("corbhmth") if geo then geo.energymake=450 end local wall=U("armfort") if wall then wall.energycost=0 wall.metalcost=0 end\n');
+  }
+  if(s.riseTech){
+    p.push('  local t1=U("raptor_land_swarmer_heal_t1_v1") if t1 then t1.canreclaim=true t1.maxthisunit=1 t1.energymake=25 end builds("raptor_land_swarmer_heal_t1_v1",{"raptor_turret_basic_t2_v1","raptor_turret_antiair_t2_v1","raptor_land_swarmer_heal_t2_v1"})\n');
+    p.push('  local t2=U("raptor_land_swarmer_heal_t2_v1") if t2 then t2.canreclaim=true t2.maxthisunit=1 t2.energymake=25 end builds("raptor_land_swarmer_heal_t2_v1",{"raptor_turret_basic_t2_v1","raptor_turret_antiair_t2_v1","raptor_turret_acid_t2_v1","raptor_turret_emp_t2_v1","raptor_land_swarmer_heal_t3_v1","armgatet","raptor_hive"})\n');
+    p.push('  local t3=U("raptor_land_swarmer_heal_t3_v1") if t3 then t3.canreclaim=true t3.maxthisunit=1 t3.energymake=25 end builds("raptor_land_swarmer_heal_t3_v1",{"raptor_turret_basic_t3_v1","raptor_turret_antiair_t3_v1","raptor_turret_acid_t2_v1","raptor_turret_emp_t2_v1","raptor_land_swarmer_heal_t4_v1","corgatet3","raptor_hive"})\n');
+    p.push('  local t4=U("raptor_land_swarmer_heal_t4_v1") if t4 then t4.canreclaim=true t4.maxthisunit='+healerCap+' t4.metalmake=20 t4.energymake=600 end builds("raptor_land_swarmer_heal_t4_v1",{"raptor_turret_basic_t3_v1","raptor_turret_antiair_t3_v1","raptor_turret_acid_t3_v1","raptor_turret_emp_t3_v1","raptor_land_swarmer_heal_t4_v1","corgatet3","raptor_hive","raptor_matriarch_healer","raptor_turret_basic_t4_v1","raptor_turret_antiair_t4_v1","raptor_turret_acid_t4_v1","raptor_turret_emp_t4_v1","raptor_turret_meteor_t4_v1","raptor_queen_epic","raptor_matriarch_basic"})\n');
+    p.push('  local mh=U("raptor_matriarch_healer") if mh then mh.canreclaim=true mh.maxthisunit=1 mh.builddistance=1500 mh.workertime=11000 mh.energymake=19000 mh.metalmake=550 end\n');
+    p.push('  local hive=U("raptor_hive") if hive then hive.maxthisunit='+hiveCap+' hive.metalmake=700 hive.energymake=45000 hive.maxslope=360 local g=W("raptor_hive","antiground") if g then g.range=1 end local a=W("raptor_hive","antiair") if a then a.range=1 end local m=W("raptor_hive","spawnmeteor") if m then m.range=1 end end\n');
+  }
+  if(s.riseDefense){
+    p.push('  local aa=W("raptor_turret_antiair_t4_v1","weapon") if aa then aa.reloadtime=1 aa.range=1800 aa.metalpershot=100 aa.energypershot=2000 end\n');
+    p.push('  local emp=W("raptor_turret_emp_t4_v1","raptorparalyzerbig") if emp then emp.reloadtime=15 emp.metalpershot=1000 emp.energypershot=80000 end\n');
+    p.push('  local acid=W("raptor_turret_acid_t4_v1","acidspit") if acid then acid.reloadtime=15 acid.metalpershot=1000 acid.energypershot=80000 end\n');
+    p.push('  local gun=W("raptor_turret_basic_t4_v1","weapon") if gun then gun.reloadtime=15 gun.metalpershot=1000 gun.energypershot=80000 end\n');
+  }
+  if(s.riseDragons){
+    p.push('  local d1=U("raptor_allterrain_arty_brood_t4_v1") if d1 then d1.maxthisunit=1 d1.canfly=true d1.cruisealtitude=220 d1.speed=100 end local w1=W("raptor_allterrain_arty_brood_t4_v1","cor_gol") if w1 then w1.reloadtime=2.5 w1.range=1800 w1.areaofeffect=500 w1.energypershot=1500000 dmg(w1,{default=9500,subs=9500,vtol=9500}) end\n');
+    p.push('  local d2=U("raptor_air_bomber_brood_t4_v4") if d2 then d2.maxthisunit=1 end local w2=W("raptor_air_bomber_brood_t4_v4","dmaw") if w2 then w2.burst=2 w2.burstrate=.08 w2.reloadtime='+dragonReload+' w2.range=1900 w2.energypershot=8000000 dmg(w2,{default=20000,subs=20000}) end\n');
+    p.push('  local d3=U("raptor_air_bomber_brood_t4_v3") if d3 then d3.maxthisunit=1 end local w3=W("raptor_air_bomber_brood_t4_v3","t2heatray") if w3 then w3.reloadtime='+dragonReload+' w3.beamtime=.12 w3.energypershot=16000000 dmg(w3,{default=21000,vtol=21000}) end\n');
+    p.push('  local d4=U("raptor_air_bomber_brood_t4_v2") if d4 then d4.maxthisunit=1 end local w4=W("raptor_air_bomber_brood_t4_v2","t2heatray") if w4 then w4.reloadtime='+dragonReload+' w4.beamtime=.12 w4.energypershot=16000000 dmg(w4,{default=20000,vtol=20000}) end\n');
+    p.push('  local acid=U("raptor_matriarch_acid") if acid then acid.maxthisunit=1 acid.canfly=true acid.cruisealtitude=400 end local aw=W("raptor_matriarch_acid","acidgoo") if aw then aw.burst=1 aw.burstrate=.08 aw.reloadtime=10 aw.energypershot=40000000 dmg(aw,{default=550000,shields=17600}) aw.customparams=aw.customparams or {} aw.customparams.area_onhit_time="5" aw.customparams.area_onhit_damage="250" aw.customparams.area_onhit_range="120" end\n');
+    p.push('  local sp=U("raptor_matriarch_spectre") if sp then sp.maxthisunit=1 sp.canfly=true sp.cruisealtitude=400 end local sw=W("raptor_matriarch_spectre","goo") if sw then sw.burst=1 sw.burstrate=.08 sw.reloadtime=10 sw.energypershot=44000000 dmg(sw,{default=607200,shields=16500}) sw.customparams=sw.customparams or {} sw.customparams.spark_forkdamage="0.5" sw.customparams.spark_maxunits="6" sw.customparams.spark_range="400" end\n');
+    p.push('  local el=U("raptor_matriarch_electric") if el then el.maxthisunit=1 el.canfly=true el.cruisealtitude=400 end local ew=W("raptor_matriarch_electric","goolauncher") if ew then ew.burst=1 ew.burstrate=.08 ew.reloadtime=10 ew.energypershot=40000000 dmg(ew,{default=556000,shields=17750}) ew.customparams=ew.customparams or {} ew.customparams.spark_forkdamage="0.5" ew.customparams.spark_maxunits="6" ew.customparams.spark_range="400" end\n');
+  }
+  if(s.riseQueens){
+    p.push('  local small=U("raptor_matriarch_basic") if small then small.maxthisunit=1 small.maxslope=360 end local sq=W("raptor_matriarch_basic","botcannon") if sq then sq.burst=1 sq.burstrate=.1 sq.projectiles=1 sq.reloadtime='+queenReload+' sq.range=4000 sq.stockpile=true sq.stockpiletime=1 sq.customparams=sq.customparams or {} sq.customparams.spawns_name="raptor_land_assault_basic_t4_v1 raptor_allterrain_arty_basic_t4_v1 raptor_land_swarmer_brood_t3_v1 raptor_allterrain_arty_emp_t4_v1 raptor_land_swarmer_fire_t4_v1 raptor_land_assault_spectre_t4_v1 raptor_air_fighter_basic_t4_v1 raptor_air_bomber_basic_t4_v1" sq.customparams.spawns_expire="'+spawnExpire+'" sq.customparams.spawns_surface="LAND SEA" sq.customparams.spawns_mode="random" sq.customparams.stockpilelimit="1" end\n');
+    p.push('  local big=U("raptor_queen_epic") if big then big.maxthisunit=1 big.maxslope=360 end local bq=W("raptor_queen_epic","botcannon") if bq then bq.burst=1 bq.burstrate=.1 bq.projectiles=1 bq.reloadtime='+(queenReload*2)+' bq.range=4000 bq.stockpile=true bq.stockpiletime=1 bq.customparams=bq.customparams or {} bq.customparams.spawns_name="raptor_allterrain_arty_brood_t4_v1 raptor_air_bomber_brood_t4_v3 raptor_air_bomber_brood_t4_v4 raptor_air_bomber_brood_t4_v2 raptor_matriarch_acid raptor_matriarch_electric raptor_matriarch_spectre" bq.customparams.spawns_surface="LAND SEA" bq.customparams.spawns_mode="random" bq.customparams.stockpilelimit="1" bq.customparams.spawns_expire=nil end\n');
+  }
+  return wrapModule(p.join(""));
+}
+
+function buildEliteHiveLua(s){
+  if(!s.eliteHive)return "";
+  const hp=Math.max(1,Math.round(s.hiveHealth||120000));
+  const metal=Math.max(0,Number(s.hiveMetalMake)||0);
+  const energy=Math.max(0,Number(s.hiveEnergyMake)||0);
+  const storage=Math.max(0,Number(s.hiveEnergyStorage)||0);
+  const worker=Math.max(0,Number(s.hiveWorkerTime)||0);
+  const groundDamage=Math.max(1,Number(s.hiveGroundDamage)||1);
+  const groundReload=Math.max(.1,Number(s.hiveGroundReload)||10);
+  const groundBurst=Math.max(1,Math.round(s.hiveGroundBurst||2));
+  const groundAoe=Math.max(1,Math.round(s.hiveGroundAoe||300));
+  const aaDamage=Math.max(1,Number(s.hiveAaDamage)||1);
+  const aaReload=Math.max(.1,Number(s.hiveAaReload)||2.5);
+  const meteorDamage=Math.max(1,Number(s.hiveMeteorDamage)||1);
+  const meteorReload=Math.max(.1,Number(s.hiveMeteorReload)||15);
+  const broodReload=Math.max(1,Number(s.hiveBroodReload)||30);
+  const broodExpire=Math.max(1,Number(s.hiveBroodExpire)||25);
+  const broodSpawn=esc(s.hiveBroodSpawn||"raptor_land_swarmer_brood_t3_v1");
+  const p=[];
+  p.push('  local h=UnitDefs["raptor_hive"]\n');
+  p.push('  if h then h.health='+hp+' h.metalmake='+metal+' h.energymake='+energy+' h.energystorage='+storage+' h.workertime='+worker+' h.customparams=h.customparams or {} h.customparams.pve_elite_hive="1"\n');
+  p.push('    local g=h.weapondefs and h.weapondefs.antiground if g then g.burst='+groundBurst+' g.burstrate=0.08 g.reloadtime='+groundReload+' g.areaofeffect='+groundAoe+' g.damage=g.damage or {} g.damage.default='+groundDamage+' end\n');
+  p.push('    local a=h.weapondefs and h.weapondefs.antiair if a then a.reloadtime='+aaReload+' a.damage=a.damage or {} a.damage.vtol='+aaDamage+' end\n');
+  p.push('    local m=h.weapondefs and h.weapondefs.spawnmeteor if m then m.reloadtime='+meteorReload+' m.damage=m.damage or {} m.damage.default='+meteorDamage+' end\n');
+  p.push('  end\n');
+  if(s.hiveBrood){
+    p.push('  local b=UnitDefs["raptor_turret_brood_t4_v2"]\n');
+    p.push('  if b then b.health=50000 b.maxthisunit=2 b.customparams=b.customparams or {} b.customparams.pve_elite_hive_brood="1" local w=b.weapondefs and b.weapondefs.bloodyeggs if w then w.burst=1 w.burstrate=0.1 w.reloadtime='+broodReload+' w.customparams=w.customparams or {} w.customparams.spawns_name="'+broodSpawn+'" w.customparams.spawns_surface="LAND SEA" w.customparams.spawns_expire="'+broodExpire+'" end end\n');
+  }
+  return wrapModule(p.join(""));
+}
+
+function buildPerformanceLua(s){
+  if(!s.performance)return "";
+  const maxBurst=Math.max(1,Math.round(s.perfMaxBurst||8));
+  const maxProjectiles=Math.max(1,Math.round(s.perfMaxProjectiles||4));
+  const minReload=Math.max(.01,Number(s.perfMinReload)||.12);
+  const minBurstRate=Math.max(.001,Number(s.perfMinBurstRate)||.03);
+  const sparkMax=Math.max(1,Math.round(s.perfSparkMax||6));
+  const clusterMax=Math.max(1,Math.round(s.perfClusterMax||6));
+  const areaTime=Math.max(.5,Number(s.perfAreaTime)||6);
+  const spawnExpire=Math.max(1,Number(s.perfSpawnExpire)||30);
+  const p=[];
+  p.push('  local maxBurst='+maxBurst+' local maxProjectiles='+maxProjectiles+' local minReload='+minReload+' local minBurstRate='+minBurstRate+' local sparkMax='+sparkMax+' local clusterMax='+clusterMax+' local areaTime='+areaTime+' local spawnExpire='+spawnExpire+'\n');
+  p.push('  local function scaleDamage(w,m) if not w.damage or m==1 then return end for k,v in pairs(w.damage) do if type(v)=="number" then w.damage[k]=v*m end end end\n');
+  p.push('  local function clampParam(q,key,limit) local v=q and tonumber(q[key]) if v and v>limit then q[key]=tostring(limit) end end\n');
+  p.push('  for _,ud in pairs(UnitDefs) do\n');
+  p.push('    for _,wd in pairs(ud.weapondefs or {}) do\n');
+  p.push('      local mult=1\n');
+  p.push('      if type(wd.burst)=="number" and wd.burst>maxBurst then mult=mult*(wd.burst/maxBurst) wd.burst=maxBurst end\n');
+  p.push('      if type(wd.projectiles)=="number" and wd.projectiles>maxProjectiles then mult=mult*(wd.projectiles/maxProjectiles) wd.projectiles=maxProjectiles end\n');
+  p.push('      if type(wd.reloadtime)=="number" and wd.reloadtime>0 and wd.reloadtime<minReload then mult=mult*(minReload/wd.reloadtime) wd.reloadtime=minReload end\n');
+  p.push('      if type(wd.burstrate)=="number" and wd.burstrate>0 and wd.burstrate<minBurstRate then wd.burstrate=minBurstRate end\n');
+  p.push('      scaleDamage(wd,mult)\n');
+  p.push('      local q=wd.customparams if q then clampParam(q,"spark_maxunits",sparkMax) clampParam(q,"cluster_number",clusterMax) clampParam(q,"area_onhit_time",areaTime) clampParam(q,"area_ondeath_time",areaTime) clampParam(q,"spawns_expire",spawnExpire) end\n');
+  p.push('    end\n');
+  p.push('  end\n');
+  return wrapModule(p.join(""));
+}
+
 function buildConfigModules(){
   const s=getConfig(),mods=[];
   const push=(slot,title,lua,type="tweakdefs")=>{if(lua&&lua.trim())mods.push({slot,title,lua,type,key:type+(slot===0?"":slot)})};
@@ -400,10 +574,15 @@ function buildConfigModules(){
   push(14,"COR T3 · 移动要塞",buildCorT3Lua(s));
   push(15,"LEG T3 · 持续压制",buildLegT3Lua(s));
   push(16,"公共 Boss 补位 · Scavenger",buildBossSupportLua(s));
+  push(17,"精英虫巢 · 经济与育巢核心",buildEliteHiveLua(s));
+  push(19,"虫族崛起 · 性能重构版",buildRaptorRisePerformanceLua(s));
+  mods.push(...buildBakaniModules(s));
+  push(29,"性能重构 · 战斗事件预算",buildPerformanceLua(s));
   return mods;
 }
 function renderConfig(){
   const mods=buildConfigModules();
+  const extras=buildExtraCommands(getConfig());
   const blocks=mods.map(m=>{
     const cmd="!bset "+m.key+" "+encode64(m.lua);
     const warn=cmd.length>16000?"  ⚠ 超过16000字符":"";
@@ -411,9 +590,9 @@ function renderConfig(){
   });
   const combined=mods.map(m=>"-- "+m.title+" ["+m.key+"]\n"+m.lua).join("\n\n");
   $("configLua").textContent=combined||"-- 当前没有启用任何模块";
-  $("configCommand").textContent=blocks.join("\n\n")||"-- 当前没有可生成的命令";
+  $("configCommand").textContent=[...blocks,...extras].join("\n\n")||"-- 当前没有可生成的命令";
   const over=mods.filter(m=>("!bset "+m.key+" "+encode64(m.lua)).length>16000).length;
-  $("configStats").textContent=mods.length+" 个模块 · "+mods.map(m=>m.key).join(" / ")+(over?" · ⚠ "+over+" 个模块超长":"");
+  $("configStats").textContent=mods.length+" 个模块 · "+mods.map(m=>m.key).join(" / ")+(extras.length?" · "+extras.length+" 条房间命令":"")+(over?" · ⚠ "+over+" 个模块超长":"");
   if($("playerDefenseSummary"))$("playerDefenseSummary").textContent=enabledDefenseUnits.size+" / "+PLAYER_DEFENSES.length+" 已启用";
   if($("ultimatePreview")){
     const ult=buildUltimateLua(getConfig());
@@ -448,6 +627,11 @@ $("copyArmT3")?.addEventListener("click",()=>{const lua=buildArmT3Lua(getConfig(
 $("copyCorT3")?.addEventListener("click",()=>{const lua=buildCorT3Lua(getConfig());copyText(lua?"!bset tweakdefs14 "+encode64(lua):"-- COR T3 模块未启用",$("copyCorT3"))});
 $("copyLegT3")?.addEventListener("click",()=>{const lua=buildLegT3Lua(getConfig());copyText(lua?"!bset tweakdefs15 "+encode64(lua):"-- LEG T3 模块未启用",$("copyLegT3"))});
 $("copyBossSupport")?.addEventListener("click",()=>{const lua=buildBossSupportLua(getConfig());copyText(lua?"!bset tweakdefs16 "+encode64(lua):"-- Boss 补位模块未启用",$("copyBossSupport"))});
+$("copyEliteHive")?.addEventListener("click",()=>{const lua=buildEliteHiveLua(getConfig());copyText(lua?"!bset tweakdefs17 "+encode64(lua):"-- 精英虫巢模块未启用",$("copyEliteHive"))});
+$("copyRisePerformance")?.addEventListener("click",()=>{const lua=buildRaptorRisePerformanceLua(getConfig());copyText(lua?"!bset tweakdefs19 "+encode64(lua):"-- 虫族崛起性能版模块未启用",$("copyRisePerformance"))});
+$("copyBakani")?.addEventListener("click",()=>{const s=getConfig(),mods=buildBakaniModules(s);let cmds=[...mods.map(m=>"!bset "+m.key+" "+encode64(m.lua)),...buildExtraCommands(s)];if(s.performance){const p=buildPerformanceLua(s);if(p)cmds.push("!bset tweakdefs29 "+encode64(p))}copyText(cmds.length?cmds.join("\n"):"-- 巴卡妮性能版模块未启用",$("copyBakani"))});
+$("copyBakaniShield")?.addEventListener("click",()=>copyText(BK.shieldCommand||"!experimentalshields bounceeverything",$("copyBakaniShield")));
+$("copyPerformance")?.addEventListener("click",()=>{const lua=buildPerformanceLua(getConfig());copyText(lua?"!bset tweakdefs29 "+encode64(lua):"-- 性能重构模块未启用",$("copyPerformance"))});
 $("copyArmLand")?.addEventListener("click",()=>{const lua=buildArmLandLua(getConfig());copyText(lua?"!bset tweakdefs10 "+encode64(lua):"-- ARM 地面兵种模块未启用",$("copyArmLand"))});
 $("copyCorLand")?.addEventListener("click",()=>{const lua=buildCorLandLua(getConfig());copyText(lua?"!bset tweakdefs11 "+encode64(lua):"-- COR 地面兵种模块未启用",$("copyCorLand"))});
 $("copyLegLand")?.addEventListener("click",()=>{const lua=buildLegLandLua(getConfig());copyText(lua?"!bset tweakdefs12 "+encode64(lua):"-- LEG 地面兵种模块未启用",$("copyLegLand"))});
@@ -456,7 +640,7 @@ $("copyUltimateLua")?.addEventListener("click",()=>copyText(buildUltimateLua(get
 $("copyUltimateCmd")?.addEventListener("click",()=>{const lua=buildUltimateLua(getConfig());copyText(lua?"!bset tweakdefs8 "+encode64(lua):"-- 终极武器模块未启用",$("copyUltimateCmd"))});
 qa("[data-config-preset]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.configPreset;if(k==="reset")setConfig(resetState());else setConfig(BUILTIN[k].state)}));
 $("copyConfigLua").onclick=()=>copyText($("configLua").textContent,$("copyConfigLua"));
-$("copyConfigCmd").onclick=()=>{const cmds=buildConfigModules().map(m=>"!bset "+m.key+" "+encode64(m.lua)).join("\n");copyText(cmds,$("copyConfigCmd"))};
+$("copyConfigCmd").onclick=()=>{const s=getConfig();const cmds=[...buildConfigModules().map(m=>"!bset "+m.key+" "+encode64(m.lua)),...buildExtraCommands(s)].join("\n");copyText(cmds,$("copyConfigCmd"))};
 $("sendConfigToEditor").onclick=()=>{$("editorText").value=$("configLua").textContent;renderEditor();switchTab("editor")};
 
 function renderBuiltinPresets(){
